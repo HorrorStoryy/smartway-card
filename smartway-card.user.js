@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Карточка сотрудника Smartway
 // @namespace    https://smartway.today/
-// @version      2.0
+// @version      2.1
 // @description  Извлекает данные сотрудника и формирует карточку
 // @author       Smartway
 // @match        https://bo.sandbox.smartway.today/*
@@ -15,6 +15,15 @@
 (function() {
     'use strict';
 
+    // Unicode-escape коды для иконок (GitHub не ломает их)
+    var ICON_CLIPBOARD = '\uD83D\uDCCB'; // 📋
+    var ICON_CLOSE = '\u2715';           // ✕
+    var ICON_CHECK = '\u2705';           // ✅
+    var ICON_HOURGLASS = '\u23F3';       // 
+    var ICON_CROSS = '\u274C';           // ❌
+    var ICON_TRAIN = '\uD83D\uDE84';     // 🚄
+    var ICON_SHIELD = '\uD83D\uDEE1\uFE0F'; // 🛡️
+
     var cachedData = null;
     var lastCardText = '';
 
@@ -23,8 +32,8 @@
         if (oldBtn) oldBtn.remove();
         var toggle = document.createElement('button');
         toggle.id = 'smartway-toggle';
-        toggle.textContent = '[K]';
-        toggle.title = 'Карточка сотрудника';
+        toggle.textContent = ICON_CLIPBOARD;
+        toggle.title = 'Карточка сотрудника (Ctrl+1/2/3)';
         toggle.style.cssText = 'position:fixed;top:100px;right:20px;z-index:999999;background:#4CAF50;color:#fff;border:none;border-radius:50%;width:50px;height:50px;font-size:24px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,0.3);transition:0.2s;display:flex;align-items:center;justify-content:center;opacity:0.8;';
         toggle.onmouseover = function() { this.style.opacity = '1'; this.style.transform = 'scale(1.05)'; };
         toggle.onmouseout = function() { this.style.opacity = '0.8'; this.style.transform = 'scale(1)'; };
@@ -44,7 +53,6 @@
     function parsePageData() {
         console.log('[SW] Начинаю парсинг...');
         var text = document.body.innerText;
-        console.log('[SW] Длина текста:', text.length);
 
         function findValue(label) {
             var escaped = label.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
@@ -261,16 +269,16 @@
 
         var header = document.createElement('div');
         header.style.cssText = 'background:#4CAF50;color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;cursor:move;user-select:none;';
-        header.innerHTML = '<span style="font-weight:bold;font-size:16px;">Карточка сотрудника</span><button id="smartway-close" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;">X</button>';
+        header.innerHTML = '<span style="font-weight:bold;font-size:16px;">' + ICON_CLIPBOARD + ' Карточка сотрудника</span><button id="smartway-close" style="background:none;border:none;color:#fff;font-size:20px;cursor:pointer;">' + ICON_CLOSE + '</button>';
         panel.appendChild(header);
 
         var typeSelector = document.createElement('div');
         typeSelector.style.cssText = 'display:flex;gap:6px;padding:10px 12px;background:#f9f9f9;border-bottom:1px solid #eee;flex-wrap:wrap;';
 
         var types = [
-            { id: 'standard', label: 'Стандартная' },
-            { id: 'rail', label: 'ЖД' },
-            { id: 'insurance', label: 'Страховка' }
+            { id: 'standard', label: ICON_CLIPBOARD + ' Стандартная' },
+            { id: 'rail', label: ICON_TRAIN + ' ЖД' },
+            { id: 'insurance', label: ICON_SHIELD + ' Страховка' }
         ];
 
         var t;
@@ -303,7 +311,7 @@
 
         var copyBtn = document.createElement('button');
         copyBtn.id = 'smartway-copy';
-        copyBtn.textContent = 'Копировать';
+        copyBtn.textContent = ICON_CLIPBOARD + ' Копировать';
         copyBtn.style.cssText = 'margin:8px 16px 16px;padding:8px 0;background:#4CAF50;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:bold;';
         copyBtn.onmouseover = function() { this.style.background = '#45a049'; };
         copyBtn.onmouseout = function() { this.style.background = '#4CAF50'; };
@@ -316,12 +324,12 @@
             ta.select();
             try {
                 document.execCommand('copy');
-                copyBtn.textContent = 'Скопировано!';
-                setTimeout(function() { copyBtn.textContent = 'Копировать'; }, 1500);
+                copyBtn.textContent = ICON_CHECK + ' Скопировано!';
+                setTimeout(function() { copyBtn.textContent = ICON_CLIPBOARD + ' Копировать'; }, 1500);
             } catch (err) {
                 navigator.clipboard.writeText(lastCardText).then(function() {
-                    copyBtn.textContent = 'Скопировано!';
-                    setTimeout(function() { copyBtn.textContent = 'Копировать'; }, 1500);
+                    copyBtn.textContent = ICON_CHECK + ' Скопировано!';
+                    setTimeout(function() { copyBtn.textContent = ICON_CLIPBOARD + ' Копировать'; }, 1500);
                 }).catch(function() { alert('Не удалось скопировать'); });
             }
             ta.remove();
@@ -362,8 +370,8 @@
         if (!contentArea) return;
         if (!cachedData) cachedData = parsePageData();
         var data = cachedData;
-        if (!data) { contentArea.textContent = 'Не удалось извлечь данные'; lastCardText = ''; return; }
-        contentArea.textContent = 'Загрузка...';
+        if (!data) { contentArea.textContent = ICON_CROSS + ' Не удалось извлечь данные'; lastCardText = ''; return; }
+        contentArea.textContent = ICON_HOURGLASS + ' Загрузка...';
         lastCardText = '';
         setTimeout(function() {
             var cardText = '';
@@ -447,7 +455,7 @@
     }
 
     function init() {
-        console.log('[SW] Запуск версии 2.0');
+        console.log('[SW] Запуск версии 2.1 с иконками');
         createToggleButton();
         setupHotkeys();
     }
