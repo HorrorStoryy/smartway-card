@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Карточка сотрудника Smartway
 // @namespace    https://smartway.today/
-// @version      1.6
+// @version      1.7
 // @description  Извлекает данные сотрудника и формирует карточку
 // @author       Smartway
 // @match        https://bo.sandbox.smartway.today/*
