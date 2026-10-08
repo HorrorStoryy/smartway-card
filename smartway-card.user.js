@@ -326,7 +326,7 @@
         };
         panel.appendChild(copyBtn);
 
-        document.getElementById('smartway-close').onclick = function() { panel.style.display = 'none'; };
+        header.querySelector('#smartway-close').onclick = function() { panel.style.display = 'none'; };
 
         var isDragging = false, offsetX = 0, offsetY = 0;
         header.addEventListener('mousedown', function(e) {
