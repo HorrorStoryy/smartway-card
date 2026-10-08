@@ -8,8 +8,8 @@
 // @match        https://bo.smartway.today/*
 // @grant        none
 // @run-at       document-idle
-// @updateURL    https://cdn.jsdelivr.net/gh/HorrorStoryy/smartway-card@main/smartway-card.meta.js
-// @downloadURL  https://cdn.jsdelivr.net/gh/HorrorStoryy/smartway-card@main/smartway-card.user.js
+// @updateURL    https://raw.githubusercontent.com/HorrorStoryy/smartway-card/main/smartway-card.meta.js
+// @downloadURL  https://raw.githubusercontent.com/HorrorStoryy/smartway-card/main/smartway-card.user.js
 // ==/UserScript==
 
 (function() {
