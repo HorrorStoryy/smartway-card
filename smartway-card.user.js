@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Карточка сотрудника Smartway
 // @namespace    https://smartway.today/
-// @version      1.9
+// @version      2.0
 // @description  Извлекает данные сотрудника и формирует карточку
 // @author       Smartway
 // @match        https://bo.sandbox.smartway.today/*
@@ -47,8 +47,8 @@
         console.log('[SW] Длина текста:', text.length);
 
         function findValue(label) {
-            var escapedLabel = label.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
-            var regex = new RegExp(escapedLabel + '\\s[:\\u2013-]?\\s*([^\\n]+)', 'i');
+            var escaped = label.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+            var regex = new RegExp(escaped + '\\s*[:\\u2013-–—]?\\s*([^\\n]+)', 'i');
             var match = text.match(regex);
             var result = match ? match[1].trim() : '';
             console.log('[SW] findValue("' + label + '") = "' + result + '"');
@@ -71,9 +71,7 @@
                 if (idx !== -1 && idx < endPos) endPos = idx;
             }
             var section = text.substring(accountIndex, endPos);
-            if (/Структурная группа/i.test(section)) {
-                return parseStructuredGroups(section);
-            }
+            if (/Структурная группа/i.test(section)) return parseStructuredGroups(section);
             var startLabel = 'Список коротких компаний:';
             var startPos = section.indexOf(startLabel);
             if (startPos === -1) return '';
@@ -179,11 +177,11 @@
                 var start = parts[p].start + parts[p].marker.length;
                 var nextStart = (p + 1 < parts.length) ? parts[p+1].start : text.length;
                 var section = text.substring(start, nextStart);
-                var s = section.match(/Фамилия\s*[:\u2013-]?\s*([^\n]+)/i);
-                var n = section.match(/Имя\s*[:\u2013-]?\s*([^\n]+)/i);
-                var pt = section.match(/Отчество\s*[:\u2013-]?\s*([^\n]+)/i);
-                var num = section.match(/Номер\s*[:\u2013-]?\s*([^\n]+)/i);
-                var exp = section.match(/Срок действия\s*[:\u2013-]?\s*([^\n]+)/i);
+                var s = section.match(/Фамилия\s*[:\u2013-–—]?\s*([^\n]+)/i);
+                var n = section.match(/Имя\s*[:\u2013-–—]?\s*([^\n]+)/i);
+                var pt = section.match(/Отчество\s*[:\u2013-–—]?\s*([^\n]+)/i);
+                var num = section.match(/Номер\s*[:\u2013-–—]?\s*([^\n]+)/i);
+                var exp = section.match(/Срок действия\s*[:\u2013-–—]?\s*([^\n]+)/i);
                 results.push({
                     surname: s ? s[1].trim() : '',
                     name: n ? n[1].trim() : '',
@@ -199,7 +197,7 @@
         function getPassportRF() {
             var section = text.split('Паспорт РФ')[1];
             if (!section) return '';
-            var match = section.match(/Номер\s*[:\u2013-]?\s*([^\n]+)/i);
+            var match = section.match(/Номер\s*[:\u2013-–—]?\s*([^\n]+)/i);
             return match ? match[1].trim() : '';
         }
 
@@ -237,10 +235,6 @@
         console.log('[SW] ФИО:', fullName);
         console.log('[SW] Дата рождения:', dateString);
         console.log('[SW] Телефон:', phone);
-        console.log('[SW] Гражданство:', citizenship);
-        console.log('[SW] Email:', email);
-        console.log('[SW] Центр затрат:', costCenter);
-        console.log('[SW] Паспорт РФ:', passportRF);
 
         return {
             link: window.location.href,
@@ -453,7 +447,7 @@
     }
 
     function init() {
-        console.log('[SW] Запуск версии 1.9');
+        console.log('[SW] Запуск версии 2.0');
         createToggleButton();
         setupHotkeys();
     }
