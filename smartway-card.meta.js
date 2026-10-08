@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Карточка сотрудника Smartway
 // @namespace    https://smartway.today/
-// @version      1.3
-// @description  Извлекает данные сотрудника и формирует карточку (Стандартная / ЖД / Страховка)
+// @version      1.4
+// @description  Извлекает данные сотрудника и формирует карточку
 // @match        https://bo.sandbox.smartway.today/*
 // @match        https://bo.smartway.today/*
 // @grant        none
