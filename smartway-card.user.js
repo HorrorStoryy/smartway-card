@@ -8,9 +8,9 @@
 // @match        https://bo.smartway.today/employeePage/*
 // @grant        none
 // @run-at       document-idle
-// @updateURL    https://raw.githubusercontent.com/ВАШ_ЛОГИН/smartway-card/main/smartway-card.meta.js
-// @downloadURL  https://raw.githubusercontent.com/ВАШ_ЛОГИН/smartway-card/main/smartway-card.user.js
-// @supportURL   https://github.com/ВАШ_ЛОГИН/smartway-card/issues
+// @updateURL    https://raw.githubusercontent.com/HorrorStoryy/smartway-card/main/smartway-card.meta.js
+// @downloadURL  https://raw.githubusercontent.com/HorrorStoryy/smartway-card/main/smartway-card.user.js
+// @supportURL   https://github.com/HorrorStoryy/smartway-card/issues
 // ==/UserScript==
 
 (function() {
@@ -46,11 +46,13 @@
     // ---------- ПАРСИНГ СТРАНИЦЫ ----------
     function parsePageData() {
         const text = document.body.innerText;
+
         function findValue(label) {
             const regex = new RegExp(label.replace(/[.+?^${}()|[\]\\]/g, '\\$&') + '\\s[:–-]?\\s*([^\\n]+)', 'i');
             const match = text.match(regex);
             return match ? match[1].trim() : '';
         }
+
         function cleanFullName(raw) {
             if (!raw) return '';
             let cleaned = raw.replace(/done_outline/gi, '').trim();
@@ -227,252 +229,4 @@
         }
         const panel = document.createElement('div');
         panel.id = 'smartway-panel';
-        panel.style.cssText = `position: fixed; top: 80px; right: 20px; z-index: 999999; width: 380px; max-height: 70vh; background: white; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e0e0e0;`;
-
-        const header = document.createElement('div');
-        header.style.cssText = `background: #4CAF50; color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; cursor: move; user-select: none;`;
-        header.innerHTML = `<span style="font-weight: bold; font-size: 16px;">📋 Карточка сотрудника</span> <button id="smartway-close" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">✕</button>`;
-        panel.appendChild(header);
-
-        const typeSelector = document.createElement('div');
-        typeSelector.style.cssText = `display: flex; gap: 6px; padding: 10px 12px; background: #f9f9f9; border-bottom: 1px solid #eee; flex-wrap: wrap;`;
-        const types = [
-            { id: 'standard', label: '📋 Стандартная' },
-            { id: 'rail', label: '🚄 ЖД' },
-            { id: 'insurance', label: '🛡️ Страховка' }
-        ];
-        types.forEach(t => {
-            const btn = document.createElement('button');
-            btn.dataset.type = t.id;
-            btn.textContent = t.label;
-            btn.style.cssText = `background: white; border: 1px solid #ccc; border-radius: 20px; padding: 4px 12px; font-size: 13px; cursor: pointer; transition: 0.2s; flex: 1; white-space: nowrap;`;
-            btn.onmouseover = () => { btn.style.background = '#e8f5e9'; };
-            btn.onmouseout = () => { btn.style.background = 'white'; };
-            btn.onclick = () => {
-                document.querySelectorAll('#smartway-panel .type-btn').forEach(b => b.style.background = 'white');
-                btn.style.background = '#c8e6c9';
-                generateCard(t.id);
-            };
-            btn.className = 'type-btn';
-            typeSelector.appendChild(btn);
-        });
-        panel.appendChild(typeSelector);
-
-        const contentArea = document.createElement('div');
-        contentArea.id = 'smartway-content';
-        contentArea.style.cssText = `padding: 12px 16px; overflow-y: auto; flex: 1; background: #fafafa; min-height: 100px; max-height: 40vh; font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; font-family: 'Courier New', monospace;`;
-        contentArea.textContent = 'Выберите тип карточки';
-        panel.appendChild(contentArea);
-
-        const copyBtn = document.createElement('button');
-        copyBtn.id = 'smartway-copy';
-        copyBtn.textContent = '📋 Копировать';
-        copyBtn.style.cssText = `margin: 8px 16px 16px 16px; padding: 8px 0; background: #4CAF50; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; transition: 0.2s; font-weight: bold;`;
-        copyBtn.onmouseover = () => { copyBtn.style.background = '#45a049'; };
-        copyBtn.onmouseout = () => { copyBtn.style.background = '#4CAF50'; };
-        copyBtn.onclick = () => {
-            if (!lastCardText || lastCardText === 'Выберите тип карточки' || lastCardText === '⏳ Загрузка...') {
-                return;
-            }
-            const ta = document.createElement('textarea');
-            ta.value = lastCardText;
-            ta.style.position = 'fixed';
-            ta.style.left = '-9999px';
-            ta.style.top = '-9999px';
-            document.body.appendChild(ta);
-            ta.select();
-            try {
-                document.execCommand('copy');
-                copyBtn.textContent = '✅ Скопировано!';
-                setTimeout(() => { copyBtn.textContent = '📋 Копировать'; }, 1500);
-            } catch (err) {
-                navigator.clipboard.writeText(lastCardText).then(() => {
-                    copyBtn.textContent = '✅ Скопировано!';
-                    setTimeout(() => { copyBtn.textContent = '📋 Копировать'; }, 1500);
-                }).catch(() => {
-                    alert('Не удалось скопировать текст. Попробуйте вручную.');
-                });
-            }
-            ta.remove();
-        };
-        panel.appendChild(copyBtn);
-
-        header.querySelector('#smartway-close').onclick = () => {
-            panel.style.display = 'none';
-        };
-
-        let isDragging = false;
-        let offsetX, offsetY;
-        header.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            const rect = panel.getBoundingClientRect();
-            offsetX = e.clientX - rect.left;
-            offsetY = e.clientY - rect.top;
-            panel.style.cursor = 'grabbing';
-        });
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            let left = e.clientX - offsetX;
-            let top = e.clientY - offsetY;
-            left = Math.max(10, Math.min(window.innerWidth - panel.offsetWidth - 10, left));
-            top = Math.max(10, Math.min(window.innerHeight - panel.offsetHeight - 10, top));
-            panel.style.left = left + 'px';
-            panel.style.top = top + 'px';
-            panel.style.right = 'auto';
-        });
-        document.addEventListener('mouseup', () => {
-            if (isDragging) {
-                isDragging = false;
-                panel.style.cursor = 'default';
-            }
-        });
-
-        document.body.appendChild(panel);
-        if (!cachedData) {
-            cachedData = parsePageData();
-        }
-    }
-
-    // ---------- ГЕНЕРАЦИЯ КАРТОЧКИ ----------
-    function generateCard(type) {
-        const contentArea = document.getElementById('smartway-content');
-        if (!contentArea) return;
-        if (!cachedData) {
-            cachedData = parsePageData();
-        }
-        const data = cachedData;
-        if (!data) {
-            contentArea.textContent = '❌ Не удалось извлечь данные';
-            lastCardText = '';
-            return;
-        }
-        contentArea.textContent = '⏳ Загрузка...';
-        lastCardText = '';
-        setTimeout(() => {
-            let cardText = '';
-            const { link, fullName, dateString, phone, citizenship, email, costCenter, shortCompanies,
-                passportRF, foreignPassports, isRussian } = data;
-
-            function formatPassports(passports) {
-                if (!passports || passports.length === 0) return '';
-                let result = '';
-                passports.forEach((p, index) => {
-                    if (index > 0) result += '\n---\n';
-                    result += p.marker + ':\n';
-                    result += p.surname + '\n' + p.name;
-                    if (p.patronymic) result += '\n' + p.patronymic;
-                    result += '\n' + p.number + '\n' + p.expiry;
-                });
-                return result;
-            }
-
-            if (type === 'standard') {
-                if (isRussian) {
-                    cardText = `${link}\n\n${fullName}\n${dateString}\n${phone}\n${passportRF}\n\n${shortCompanies}`;
-                    if (costCenter) cardText += `\n\nЦЗ: **${costCenter}**`;
-                } else {
-                    let foreignPart = '';
-                    if (foreignPassports.length > 0) {
-                        foreignPart = '\n\n' + formatPassports(foreignPassports);
-                    } else {
-                        foreignPart = '\n\nПаспорт иностранного гр-на не найден';
-                    }
-                    cardText = `${link}\n\n${fullName}\n${dateString}\n${phone}\n\n${citizenship}${foreignPart}\n\n${shortCompanies}`;
-                    if (costCenter) cardText += `\n\nЦЗ: **${costCenter}**`;
-                }
-            } else if (type === 'rail') {
-                let foreignPart = '';
-                if (foreignPassports.length > 0) {
-                    foreignPart = '\n\n' + formatPassports(foreignPassports);
-                } else {
-                    foreignPart = '\n\nЗагран.паспорт не найден';
-                }
-                cardText = `${link}\n\n${fullName}\n${dateString}\n${phone}`;
-                if (!isRussian) {
-                    cardText += `\n\n${citizenship}`;
-                }
-                cardText += foreignPart + `\n\n${shortCompanies}`;
-                if (costCenter) cardText += `\n\nЦЗ: **${costCenter}**`;
-            } else if (type === 'insurance') {
-                let foreignPart = '';
-                if (foreignPassports.length > 0) {
-                    foreignPart = '\n\n' + formatPassports(foreignPassports);
-                } else {
-                    foreignPart = '\n\nЗагран.паспорт не найден';
-                }
-                cardText = `${link}\n\n${fullName}\n${dateString}\n${phone}`;
-                if (isRussian) {
-                    cardText += `\n${passportRF}`;
-                } else {
-                    cardText += `\n\n${citizenship}`;
-                }
-                cardText += `\n\nEmail: ${email}` + foreignPart + `\n\n${shortCompanies}`;
-                if (costCenter) cardText += `\n\nЦЗ: **${costCenter}**`;
-            }
-
-            lastCardText = cardText;
-            contentArea.textContent = cardText;
-            console.log('📋 Текст для копирования сохранён, длина:', lastCardText.length);
-        }, 50);
-    }
-
-    // ---------- ОТКРЫТИЕ ПО КЛАВИШАМ ----------
-    function openPanelAndGenerate(type) {
-        let panel = document.getElementById('smartway-panel');
-        if (!panel) {
-            createPanel();
-            panel = document.getElementById('smartway-panel');
-        } else {
-            panel.style.display = 'block';
-        }
-        if (!cachedData) {
-            cachedData = parsePageData();
-        }
-        const btn = document.querySelector(`#smartway-panel .type-btn[data-type="${type}"]`);
-        if (btn) btn.click();
-    }
-
-    // ---------- ГОРЯЧИЕ КЛАВИШИ ----------
-    function hotkeyHandler(e) {
-        if (e.ctrlKey && !e.altKey && !e.shiftKey) {
-            const key = e.key;
-            if (key === '1') {
-                e.preventDefault();
-                e.stopPropagation();
-                openPanelAndGenerate('standard');
-                return;
-            }
-            if (key === '2') {
-                e.preventDefault();
-                e.stopPropagation();
-                openPanelAndGenerate('rail');
-                return;
-            }
-            if (key === '3') {
-                e.preventDefault();
-                e.stopPropagation();
-                openPanelAndGenerate('insurance');
-                return;
-            }
-        }
-    }
-
-    function setupHotkeys() {
-        window.removeEventListener('keydown', hotkeyHandler);
-        document.removeEventListener('keydown', hotkeyHandler);
-        window.addEventListener('keydown', hotkeyHandler, true);
-        document.addEventListener('keydown', hotkeyHandler, true);
-    }
-
-    // ---------- ИНИЦИАЛИЗАЦИЯ ----------
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            createToggleButton();
-            setupHotkeys();
-        });
-    } else {
-        createToggleButton();
-        setupHotkeys();
-    }
-
-})();
+        panel.style.cssText = `position: fixed; top: 80px; right: 
