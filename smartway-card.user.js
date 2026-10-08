@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Карточка сотрудника Smartway
 // @namespace    https://smartway.today/
-// @version      1.5
+// @version      1.6
 // @description  Извлекает данные сотрудника и формирует карточку
 // @author       Smartway
 // @match        https://bo.sandbox.smartway.today/*
@@ -15,12 +15,13 @@
 (function() {
     'use strict';
 
-    console.log('[SMARTWAY] Скрипт загружен, версия 1.5');
+    console.log('[SMARTWAY] Скрипт загружен, версия 1.6');
 
     var cachedData = null;
     var lastCardText = '';
 
     function createToggleButton() {
+        console.log('[SMARTWAY] Создаю кнопку...');
         var oldBtn = document.getElementById('smartway-toggle');
         if (oldBtn) oldBtn.remove();
         var toggle = document.createElement('button');
@@ -31,6 +32,7 @@
         toggle.onmouseover = function() { this.style.opacity = '1'; this.style.transform = 'scale(1.05)'; };
         toggle.onmouseout = function() { this.style.opacity = '0.8'; this.style.transform = 'scale(1)'; };
         toggle.onclick = function() {
+            console.log('[SMARTWAY] Клик по кнопке');
             var panel = document.getElementById('smartway-panel');
             if (panel) {
                 panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
@@ -40,10 +42,11 @@
             }
         };
         document.body.appendChild(toggle);
-        console.log('[SMARTWAY] Кнопка создана');
+        console.log('[SMARTWAY] Кнопка создана успешно');
     }
 
     function parsePageData() {
+        console.log('[SMARTWAY] Начинаю парсинг данных...');
         var text = document.body.innerText;
 
         function findValue(label) {
@@ -58,12 +61,13 @@
         }
 
         function getShortCompanies() {
-            var accountIndex = text.indexOf('\u0410\u041A\u041A\u0410\u0423\u041d\u0422\u042b');
+            var accountIndex = text.indexOf('\u0410\u041a\u041a\u0410\u0423\u041d\u0422\u042b');
             if (accountIndex === -1) return '';
             var endMarkers = ['\u0411\u041e\u041d\u0423\u0421\u041d\u042b\u0415 \u041a\u0410\u0420\u0422\u042b', '\u0414\u041e\u041a\u0423\u041c\u0415\u041d\u0422\u042b', 'TRAVEL \u041f\u041e\u041b\u0418\u0422\u0418\u041a\u0418', '\u041f\u0420\u0410\u0412\u0410'];
             var endPos = text.length;
-            for (var i = 0; i < endMarkers.length; i++) {
-                var idx = text.indexOf(endMarkers[i], accountIndex);
+            var a;
+            for (a = 0; a < endMarkers.length; a++) {
+                var idx = text.indexOf(endMarkers[a], accountIndex);
                 if (idx !== -1 && idx < endPos) endPos = idx;
             }
             var section = text.substring(accountIndex, endPos);
@@ -75,8 +79,9 @@
             while (pos < section.length && (section[pos] === ' ' || section[pos] === '\n' || section[pos] === '\r')) pos++;
             var oldEndMarkers = ['Отделы:', 'Структурная группа'];
             var oldEndPos = section.length;
-            for (var j = 0; j < oldEndMarkers.length; j++) {
-                var idx2 = section.indexOf(oldEndMarkers[j], pos);
+            var b;
+            for (b = 0; b < oldEndMarkers.length; b++) {
+                var idx2 = section.indexOf(oldEndMarkers[b], pos);
                 if (idx2 !== -1 && idx2 < oldEndPos) oldEndPos = idx2;
             }
             return section.substring(pos, oldEndPos).trim();
@@ -85,24 +90,28 @@
         function parseStructuredGroups(section) {
             var parts = section.split(/(?=Структурная группа)/i);
             var results = [];
-            for (var i = 0; i < parts.length; i++) {
-                var part = parts[i].trim();
+            var c;
+            for (c = 0; c < parts.length; c++) {
+                var part = parts[c].trim();
                 if (!part) continue;
                 if (!/^Структурная группа/i.test(part)) continue;
                 var lines = part.split(/\r?\n/);
                 var cleanLines = [];
-                for (var k = 0; k < lines.length; k++) {
-                    var l = lines[k].trim();
+                var d;
+                for (d = 0; d < lines.length; d++) {
+                    var l = lines[d].trim();
                     if (l !== '') cleanLines.push(l);
                 }
                 var groupHeader = '';
-                for (var k2 = 0; k2 < cleanLines.length; k2++) {
-                    if (/^Структурная группа/i.test(cleanLines[k2])) { groupHeader = cleanLines[k2]; break; }
+                var e;
+                for (e = 0; e < cleanLines.length; e++) {
+                    if (/^Структурная группа/i.test(cleanLines[e])) { groupHeader = cleanLines[e]; break; }
                 }
                 var shortCompanies = '';
                 var scIdx = -1;
-                for (var k3 = 0; k3 < cleanLines.length; k3++) {
-                    if (/^Список коротких компаний/i.test(cleanLines[k3])) { scIdx = k3; break; }
+                var f;
+                for (f = 0; f < cleanLines.length; f++) {
+                    if (/^Список коротких компаний/i.test(cleanLines[f])) { scIdx = f; break; }
                 }
                 if (scIdx !== -1) {
                     var labelLine = cleanLines[scIdx];
@@ -111,9 +120,10 @@
                         var afterColon = labelLine.substring(colonIdx + 1).trim();
                         if (afterColon) shortCompanies = afterColon;
                         else {
-                            for (var m = scIdx + 1; m < cleanLines.length; m++) {
-                                if (cleanLines[m] && !/^(Отделы|Список коротких|Структурная)/i.test(cleanLines[m])) {
-                                    shortCompanies = cleanLines[m]; break;
+                            var g;
+                            for (g = scIdx + 1; g < cleanLines.length; g++) {
+                                if (cleanLines[g] && !/^(Отделы|Список коротких|Структурная)/i.test(cleanLines[g])) {
+                                    shortCompanies = cleanLines[g]; break;
                                 }
                             }
                         }
@@ -121,8 +131,9 @@
                 }
                 var departments = '';
                 var deptIdx = -1;
-                for (var k4 = 0; k4 < cleanLines.length; k4++) {
-                    if (/^Отделы/i.test(cleanLines[k4])) { deptIdx = k4; break; }
+                var h;
+                for (h = 0; h < cleanLines.length; h++) {
+                    if (/^Отделы/i.test(cleanLines[h])) { deptIdx = h; break; }
                 }
                 if (deptIdx !== -1) {
                     var labelLine2 = cleanLines[deptIdx];
@@ -131,9 +142,10 @@
                         var afterColon2 = labelLine2.substring(colonIdx2 + 1).trim();
                         if (afterColon2) departments = afterColon2;
                         else {
-                            for (var m2 = deptIdx + 1; m2 < cleanLines.length; m2++) {
-                                if (cleanLines[m2] && !/^(Отделы|Список коротких|Структурная)/i.test(cleanLines[m2])) {
-                                    departments = cleanLines[m2]; break;
+                            var m;
+                            for (m = deptIdx + 1; m < cleanLines.length; m++) {
+                                if (cleanLines[m] && !/^(Отделы|Список коротких|Структурная)/i.test(cleanLines[m])) {
+                                    departments = cleanLines[m]; break;
                                 }
                             }
                         }
@@ -151,30 +163,32 @@
             var results = [];
             var markers = ['Загран.паспорт', 'Паспорт иностранного гр-на'];
             var parts = [];
-            for (var i = 0; i < markers.length; i++) {
-                var pos = text.indexOf(markers[i]);
+            var k;
+            for (k = 0; k < markers.length; k++) {
+                var pos = text.indexOf(markers[k]);
                 while (pos !== -1) {
-                    parts.push({ marker: markers[i], start: pos });
-                    pos = text.indexOf(markers[i], pos + 1);
+                    parts.push({ marker: markers[k], start: pos });
+                    pos = text.indexOf(markers[k], pos + 1);
                 }
             }
             parts.sort(function(a, b) { return a.start - b.start; });
-            for (var i = 0; i < parts.length; i++) {
-                var start = parts[i].start + parts[i].marker.length;
-                var nextStart = (i + 1 < parts.length) ? parts[i+1].start : text.length;
+            var p;
+            for (p = 0; p < parts.length; p++) {
+                var start = parts[p].start + parts[p].marker.length;
+                var nextStart = (p + 1 < parts.length) ? parts[p+1].start : text.length;
                 var section = text.substring(start, nextStart);
                 var s = section.match(/Фамилия\s*[:\u2013-]?\s*([^\n]+)/i);
                 var n = section.match(/Имя\s*[:\u2013-]?\s*([^\n]+)/i);
-                var p = section.match(/Отчество\s*[:\u2013-]?\s*([^\n]+)/i);
+                var pt = section.match(/Отчество\s*[:\u2013-]?\s*([^\n]+)/i);
                 var num = section.match(/Номер\s*[:\u2013-]?\s*([^\n]+)/i);
                 var exp = section.match(/Срок действия\s*[:\u2013-]?\s*([^\n]+)/i);
                 results.push({
                     surname: s ? s[1].trim() : '',
                     name: n ? n[1].trim() : '',
-                    patronymic: p ? p[1].trim() : '',
+                    patronymic: pt ? pt[1].trim() : '',
                     number: num ? num[1].trim() : '',
                     expiry: exp ? exp[1].trim() : '',
-                    marker: parts[i].marker
+                    marker: parts[p].marker
                 });
             }
             return results;
@@ -235,6 +249,7 @@
     }
 
     function createPanel() {
+        console.log('[SMARTWAY] Создаю панель...');
         var existing = document.getElementById('smartway-panel');
         if (existing) { existing.style.display = 'block'; return; }
 
@@ -256,23 +271,25 @@
             { id: 'insurance', label: 'Страховка' }
         ];
 
-        for (var i = 0; i < types.length; i++) {
-            (function(t) {
+        var t;
+        for (t = 0; t < types.length; t++) {
+            (function(typeObj) {
                 var btn = document.createElement('button');
-                btn.dataset.type = t.id;
-                btn.textContent = t.label;
+                btn.dataset.type = typeObj.id;
+                btn.textContent = typeObj.label;
                 btn.className = 'type-btn';
                 btn.style.cssText = 'background:#fff;border:1px solid #ccc;border-radius:20px;padding:4px 12px;font-size:13px;cursor:pointer;transition:0.2s;flex:1;white-space:nowrap;';
                 btn.onmouseover = function() { this.style.background = '#e8f5e9'; };
                 btn.onmouseout = function() { this.style.background = '#fff'; };
                 btn.onclick = function() {
                     var allBtns = document.querySelectorAll('#smartway-panel .type-btn');
-                    for (var j = 0; j < allBtns.length; j++) allBtns[j].style.background = '#fff';
+                    var j;
+                    for (j = 0; j < allBtns.length; j++) allBtns[j].style.background = '#fff';
                     this.style.background = '#c8e6c9';
-                    generateCard(t.id);
+                    generateCard(typeObj.id);
                 };
                 typeSelector.appendChild(btn);
-            })(types[i]);
+            })(types[t]);
         }
         panel.appendChild(typeSelector);
 
@@ -339,6 +356,7 @@
     }
 
     function generateCard(type) {
+        console.log('[SMARTWAY] Генерирую карточку типа:', type);
         var contentArea = document.getElementById('smartway-content');
         if (!contentArea) return;
         if (!cachedData) cachedData = parsePageData();
@@ -363,9 +381,10 @@
             function formatPassports(passports) {
                 if (!passports || passports.length === 0) return '';
                 var result = '';
-                for (var i = 0; i < passports.length; i++) {
-                    var p = passports[i];
-                    if (i > 0) result = result + '\n---\n';
+                var q;
+                for (q = 0; q < passports.length; q++) {
+                    var p = passports[q];
+                    if (q > 0) result = result + '\n---\n';
                     result = result + p.marker + ':\n' + p.surname + '\n' + p.name;
                     if (p.patronymic) result = result + '\n' + p.patronymic;
                     result = result + '\n' + p.number + '\n' + p.expiry;
@@ -404,6 +423,7 @@
     }
 
     function openPanelAndGenerate(type) {
+        console.log('[SMARTWAY] Открытие панели для типа:', type);
         var panel = document.getElementById('smartway-panel');
         if (!panel) { createPanel(); panel = document.getElementById('smartway-panel'); }
         else panel.style.display = 'block';
