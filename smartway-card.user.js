@@ -1,15 +1,15 @@
 // ==UserScript==
 // @name         Карточка сотрудника Smartway
 // @namespace    https://smartway.today/
-// @version      1.1
+// @version      1.3
 // @description  Извлекает данные сотрудника и формирует карточку (Стандартная / ЖД / Страховка)
 // @author       Smartway
-// @match        https://bo.sandbox.smartway.today/employeePage/*
-// @match        https://bo.smartway.today/employeePage/*
+// @match        https://bo.sandbox.smartway.today/*
+// @match        https://bo.smartway.today/*
 // @grant        none
 // @run-at       document-idle
-// @updateURL    https://raw.githubusercontent.com/HorrorStoryy/smartway-card/main/smartway-card.meta.js
-// @downloadURL  https://raw.githubusercontent.com/HorrorStoryy/smartway-card/main/smartway-card.user.js
+// @updateURL    https://cdn.jsdelivr.net/gh/HorrorStoryy/smartway-card@main/smartway-card.meta.js
+// @downloadURL  https://cdn.jsdelivr.net/gh/HorrorStoryy/smartway-card@main/smartway-card.user.js
 // @supportURL   https://github.com/HorrorStoryy/smartway-card/issues
 // ==/UserScript==
 
