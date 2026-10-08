@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Карточка сотрудника Smartway
 // @namespace    https://smartway.today/
-// @version      1.8
+// @version      1.9
 // @description  Извлекает данные сотрудника и формирует карточку
 // @author       Smartway
 // @match        https://bo.sandbox.smartway.today/*
@@ -42,12 +42,17 @@
     }
 
     function parsePageData() {
+        console.log('[SW] Начинаю парсинг...');
         var text = document.body.innerText;
+        console.log('[SW] Длина текста:', text.length);
 
         function findValue(label) {
-            var regex = new RegExp(label.replace(/[.+?^${}()|[\]\\]/g, '\\$&') + '\\s[:\\u2013-]?\\s*([^\\n]+)', 'i');
+            var escapedLabel = label.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+            var regex = new RegExp(escapedLabel + '\\s[:\\u2013-]?\\s*([^\\n]+)', 'i');
             var match = text.match(regex);
-            return match ? match[1].trim() : '';
+            var result = match ? match[1].trim() : '';
+            console.log('[SW] findValue("' + label + '") = "' + result + '"');
+            return result;
         }
 
         function cleanFullName(raw) {
@@ -56,9 +61,9 @@
         }
 
         function getShortCompanies() {
-            var accountIndex = text.indexOf('\u0410\u041a\u041a\u0410\u0423\u041d\u0422\u042b');
+            var accountIndex = text.indexOf('АККАУНТЫ');
             if (accountIndex === -1) return '';
-            var endMarkers = ['\u0411\u041e\u041d\u0423\u0421\u041d\u042b\u0415 \u041a\u0410\u0420\u0422\u042b', '\u0414\u041e\u041a\u0423\u041c\u0415\u041d\u0422\u042b', 'TRAVEL \u041f\u041e\u041b\u0418\u0422\u0418\u041a\u0418', '\u041f\u0420\u0410\u0412\u0410'];
+            var endMarkers = ['БОНУСНЫЕ КАРТЫ', 'ДОКУМЕНТЫ', 'TRAVEL ПОЛИТИКИ', 'ПРАВА'];
             var endPos = text.length;
             var a;
             for (a = 0; a < endMarkers.length; a++) {
@@ -66,15 +71,15 @@
                 if (idx !== -1 && idx < endPos) endPos = idx;
             }
             var section = text.substring(accountIndex, endPos);
-            if (/\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430/i.test(section)) {
+            if (/Структурная группа/i.test(section)) {
                 return parseStructuredGroups(section);
             }
-            var startLabel = '\u0421\u043f\u0438\u0441\u043e\u043a \u043a\u043e\u0440\u043e\u0442\u043a\u0438\u0445 \u043a\u043e\u043c\u043f\u0430\u043d\u0438\u0439:';
+            var startLabel = 'Список коротких компаний:';
             var startPos = section.indexOf(startLabel);
             if (startPos === -1) return '';
             var pos = startPos + startLabel.length;
             while (pos < section.length && (section[pos] === ' ' || section[pos] === '\n' || section[pos] === '\r')) pos++;
-            var oldEndMarkers = ['\u041e\u0442\u0434\u0435\u043b\u044b:', '\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430'];
+            var oldEndMarkers = ['Отделы:', 'Структурная группа'];
             var oldEndPos = section.length;
             var b;
             for (b = 0; b < oldEndMarkers.length; b++) {
@@ -85,13 +90,13 @@
         }
 
         function parseStructuredGroups(section) {
-            var parts = section.split(/(?=\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430)/i);
+            var parts = section.split(/(?=Структурная группа)/i);
             var results = [];
             var c;
             for (c = 0; c < parts.length; c++) {
                 var part = parts[c].trim();
                 if (!part) continue;
-                if (!/^\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430/i.test(part)) continue;
+                if (!/^Структурная группа/i.test(part)) continue;
                 var lines = part.split(/\r?\n/);
                 var cleanLines = [];
                 var d;
@@ -102,13 +107,13 @@
                 var groupHeader = '';
                 var e;
                 for (e = 0; e < cleanLines.length; e++) {
-                    if (/^\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u043d\u0430\u044f \u0433\u0440\u0443\u043f\u043f\u0430/i.test(cleanLines[e])) { groupHeader = cleanLines[e]; break; }
+                    if (/^Структурная группа/i.test(cleanLines[e])) { groupHeader = cleanLines[e]; break; }
                 }
                 var shortCompanies = '';
                 var scIdx = -1;
                 var f;
                 for (f = 0; f < cleanLines.length; f++) {
-                    if (/^\u0421\u043f\u0438\u0441\u043e\u043a \u043a\u043e\u0440\u043e\u0442\u043a\u0438\u0445 \u043a\u043e\u043c\u043f\u0430\u043d\u0438\u0439/i.test(cleanLines[f])) { scIdx = f; break; }
+                    if (/^Список коротких компаний/i.test(cleanLines[f])) { scIdx = f; break; }
                 }
                 if (scIdx !== -1) {
                     var labelLine = cleanLines[scIdx];
@@ -119,7 +124,7 @@
                         else {
                             var g;
                             for (g = scIdx + 1; g < cleanLines.length; g++) {
-                                if (cleanLines[g] && !/^(\u041e\u0442\u0434\u0435\u043b\u044b|\u0421\u043f\u0438\u0441\u043e\u043a \u043a\u043e\u0440\u043e\u0442\u043a\u0438\u0445|\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u043d\u0430\u044f)/i.test(cleanLines[g])) {
+                                if (cleanLines[g] && !/^(Отделы|Список коротких|Структурная)/i.test(cleanLines[g])) {
                                     shortCompanies = cleanLines[g]; break;
                                 }
                             }
@@ -130,7 +135,7 @@
                 var deptIdx = -1;
                 var h;
                 for (h = 0; h < cleanLines.length; h++) {
-                    if (/^\u041e\u0442\u0434\u0435\u043b\u044b/i.test(cleanLines[h])) { deptIdx = h; break; }
+                    if (/^Отделы/i.test(cleanLines[h])) { deptIdx = h; break; }
                 }
                 if (deptIdx !== -1) {
                     var labelLine2 = cleanLines[deptIdx];
@@ -141,7 +146,7 @@
                         else {
                             var m;
                             for (m = deptIdx + 1; m < cleanLines.length; m++) {
-                                if (cleanLines[m] && !/^(\u041e\u0442\u0434\u0435\u043b\u044b|\u0421\u043f\u0438\u0441\u043e\u043a \u043a\u043e\u0440\u043e\u0442\u043a\u0438\u0445|\u0421\u0442\u0440\u0443\u043a\u0442\u0443\u0440\u043d\u0430\u044f)/i.test(cleanLines[m])) {
+                                if (cleanLines[m] && !/^(Отделы|Список коротких|Структурная)/i.test(cleanLines[m])) {
                                     departments = cleanLines[m]; break;
                                 }
                             }
@@ -149,8 +154,8 @@
                     }
                 }
                 var groupText = groupHeader;
-                if (shortCompanies) groupText = groupText + '\n\u0421\u043f\u0438\u0441\u043e\u043a \u043a\u043e\u0440\u043e\u0442\u043a\u0438\u0445 \u043a\u043e\u043c\u043f\u0430\u043d\u0438\u0439: ' + shortCompanies;
-                if (departments) groupText = groupText + '\n\u041e\u0442\u0434\u0435\u043b\u044b: ' + departments;
+                if (shortCompanies) groupText = groupText + '\nСписок коротких компаний: ' + shortCompanies;
+                if (departments) groupText = groupText + '\nОтделы: ' + departments;
                 results.push(groupText);
             }
             return results.join('\n\n');
@@ -158,7 +163,7 @@
 
         function getForeignPassports() {
             var results = [];
-            var markers = ['\u0417\u0430\u0433\u0440\u0430\u043d.\u043f\u0430\u0441\u043f\u043e\u0440\u0442', '\u041f\u0430\u0441\u043f\u043e\u0440\u0442 \u0438\u043d\u043e\u0441\u0442\u0440\u0430\u043d\u043d\u043e\u0433\u043e \u0433\u0440-\u043d\u0430'];
+            var markers = ['Загран.паспорт', 'Паспорт иностранного гр-на'];
             var parts = [];
             var k;
             for (k = 0; k < markers.length; k++) {
@@ -174,11 +179,11 @@
                 var start = parts[p].start + parts[p].marker.length;
                 var nextStart = (p + 1 < parts.length) ? parts[p+1].start : text.length;
                 var section = text.substring(start, nextStart);
-                var s = section.match(/\u0424\u0430\u043c\u0438\u043b\u0438\u044f\s*[:\u2013-]?\s*([^\n]+)/i);
-                var n = section.match(/\u0418\u043c\u044f\s*[:\u2013-]?\s*([^\n]+)/i);
-                var pt = section.match(/\u041e\u0442\u0447\u0435\u0441\u0442\u0432\u043e\s*[:\u2013-]?\s*([^\n]+)/i);
-                var num = section.match(/\u041d\u043e\u043c\u0435\u0440\s*[:\u2013-]?\s*([^\n]+)/i);
-                var exp = section.match(/\u0421\u0440\u043e\u043a \u0434\u0435\u0439\u0441\u0442\u0432\u0438\u044f\s*[:\u2013-]?\s*([^\n]+)/i);
+                var s = section.match(/Фамилия\s*[:\u2013-]?\s*([^\n]+)/i);
+                var n = section.match(/Имя\s*[:\u2013-]?\s*([^\n]+)/i);
+                var pt = section.match(/Отчество\s*[:\u2013-]?\s*([^\n]+)/i);
+                var num = section.match(/Номер\s*[:\u2013-]?\s*([^\n]+)/i);
+                var exp = section.match(/Срок действия\s*[:\u2013-]?\s*([^\n]+)/i);
                 results.push({
                     surname: s ? s[1].trim() : '',
                     name: n ? n[1].trim() : '',
@@ -192,9 +197,9 @@
         }
 
         function getPassportRF() {
-            var section = text.split('\u041f\u0430\u0441\u043f\u043e\u0440\u0442 \u0420\u0424')[1];
+            var section = text.split('Паспорт РФ')[1];
             if (!section) return '';
-            var match = section.match(/\u041d\u043e\u043c\u0435\u0440\s*[:\u2013-]?\s*([^\n]+)/i);
+            var match = section.match(/Номер\s*[:\u2013-]?\s*([^\n]+)/i);
             return match ? match[1].trim() : '';
         }
 
@@ -202,10 +207,10 @@
             if (!raw) return '';
             if (/^\d{2}.\d{2}.\d{4}$/.test(raw.trim())) return raw.trim();
             var months = {
-                '\u044f\u043d\u0432':'01','\u0444\u0435\u0432':'02','\u043c\u0430\u0440':'03','\u0430\u043f\u0440':'04','\u043c\u0430\u044f':'05','\u043c\u0430\u0439':'05',
-                '\u0438\u044e\u043d':'06','\u0438\u044e\u043b':'07','\u0430\u0432\u0433':'08','\u0441\u0435\u043d':'09','\u043e\u043a\u0442':'10','\u043d\u043e\u044f':'11','\u0434\u0435\u043a':'12',
-                '\u044f\u043d\u0432\u0430\u0440\u044f':'01','\u0444\u0435\u0432\u0440\u0430\u043b\u044f':'02','\u043c\u0430\u0440\u0442\u0430':'03','\u0430\u043f\u0440\u0435\u043b\u044f':'04',
-                '\u0438\u044e\u043d\u044f':'06','\u0438\u044e\u043b\u044f':'07','\u0430\u0432\u0433\u0443\u0441\u0442\u0430':'08','\u0441\u0435\u043d\u0442\u044f\u0431\u0440\u044f':'09','\u043e\u043a\u0442\u044f\u0431\u0440\u044f':'10','\u043d\u043e\u044f\u0431\u0440\u044f':'11','\u0434\u0435\u043a\u0430\u0431\u0440\u044f':'12'
+                'янв':'01','фев':'02','мар':'03','апр':'04','мая':'05','май':'05',
+                'июн':'06','июл':'07','авг':'08','сен':'09','окт':'10','ноя':'11','дек':'12',
+                'января':'01','февраля':'02','марта':'03','апреля':'04',
+                'июня':'06','июля':'07','августа':'08','сентября':'09','октября':'10','ноября':'11','декабря':'12'
             };
             var match = raw.match(/(\d+)\s*([а-яё]+).?\s*(\d{4})\s*г?.?/i);
             if (!match) return '';
@@ -215,21 +220,28 @@
             return day + '.' + month + '.' + match[3];
         }
 
-        var fullNameRaw = findValue('\u0424\u0418\u041e');
+        var fullNameRaw = findValue('ФИО');
         var fullName = cleanFullName(fullNameRaw);
-        var birthDateRaw = findValue('\u0414\u0430\u0442\u0430 \u0440\u043e\u0436\u0434\u0435\u043d\u0438\u044f');
-        var citizenship = findValue('\u0413\u0440\u0430\u0436\u0434\u0430\u043d\u0441\u0442\u0432\u043e');
-        var phone = findValue('\u0422\u0435\u043b\u0435\u0444\u043e\u043d');
+        var birthDateRaw = findValue('Дата рождения');
+        var citizenship = findValue('Гражданство');
+        var phone = findValue('Телефон');
         var email = findValue('Email') || findValue('Email:');
-        var costCenter = findValue('\u0426\u0435\u043d\u0442\u0440 \u0437\u0430\u0442\u0440\u0430\u0442 \u043f\u043e \u0443\u043c\u043e\u043b\u0447\u0430\u043d\u0438\u044e');
+        var costCenter = findValue('Центр затрат по умолчанию');
         var shortCompanies = getShortCompanies();
         var formattedDate = formatDate(birthDateRaw);
         var dateString = (birthDateRaw && formattedDate) ? birthDateRaw + ' (' + formattedDate + ')' : birthDateRaw || '';
         var passportRF = getPassportRF();
         var foreignPassports = getForeignPassports();
-        var isRussian = citizenship.toLowerCase().indexOf('\u0440\u043e\u0441\u0441\u0438\u044f') !== -1 || citizenship.toLowerCase().indexOf('russia') !== -1;
+        var isRussian = citizenship.toLowerCase().indexOf('россия') !== -1 || citizenship.toLowerCase().indexOf('russia') !== -1;
 
-        console.log('[SW] Данные:', fullName);
+        console.log('[SW] ФИО:', fullName);
+        console.log('[SW] Дата рождения:', dateString);
+        console.log('[SW] Телефон:', phone);
+        console.log('[SW] Гражданство:', citizenship);
+        console.log('[SW] Email:', email);
+        console.log('[SW] Центр затрат:', costCenter);
+        console.log('[SW] Паспорт РФ:', passportRF);
+
         return {
             link: window.location.href,
             fullName: fullName,
@@ -441,7 +453,7 @@
     }
 
     function init() {
-        console.log('[SW] Запуск версии 1.8');
+        console.log('[SW] Запуск версии 1.9');
         createToggleButton();
         setupHotkeys();
     }
