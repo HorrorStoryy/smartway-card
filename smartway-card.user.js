@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Карточка сотрудника Smartway
 // @namespace    https://smartway.today/
-// @version      2.1
+// @version      2.2
 // @description  Извлекает данные сотрудника и формирует карточку
 // @author       Smartway
 // @match        https://bo.sandbox.smartway.today/*
@@ -15,14 +15,13 @@
 (function() {
     'use strict';
 
-    // Unicode-escape коды для иконок (GitHub не ломает их)
-    var ICON_CLIPBOARD = '\uD83D\uDCCB'; // 📋
-    var ICON_CLOSE = '\u2715';           // ✕
-    var ICON_CHECK = '\u2705';           // ✅
-    var ICON_HOURGLASS = '\u23F3';       // 
-    var ICON_CROSS = '\u274C';           // ❌
-    var ICON_TRAIN = '\uD83D\uDE84';     // 🚄
-    var ICON_SHIELD = '\uD83D\uDEE1\uFE0F'; // 🛡️
+    var ICON_CLIPBOARD = '\uD83D\uDCCB';
+    var ICON_CLOSE = '\u2715';
+    var ICON_CHECK = '\u2705';
+    var ICON_HOURGLASS = '\u23F3';
+    var ICON_CROSS = '\u274C';
+    var ICON_TRAIN = '\uD83D\uDE84';
+    var ICON_SHIELD = '\uD83D\uDEE1\uFE0F';
 
     var cachedData = null;
     var lastCardText = '';
@@ -59,7 +58,6 @@
             var regex = new RegExp(escaped + '\\s*[:\\u2013-–—]?\\s*([^\\n]+)', 'i');
             var match = text.match(regex);
             var result = match ? match[1].trim() : '';
-            console.log('[SW] findValue("' + label + '") = "' + result + '"');
             return result;
         }
 
@@ -95,6 +93,7 @@
             return section.substring(pos, oldEndPos).trim();
         }
 
+        // ===== ИЗМЕНЕНО: убраны заголовки "Структурная группа N" =====
         function parseStructuredGroups(section) {
             var parts = section.split(/(?=Структурная группа)/i);
             var results = [];
@@ -109,11 +108,6 @@
                 for (d = 0; d < lines.length; d++) {
                     var l = lines[d].trim();
                     if (l !== '') cleanLines.push(l);
-                }
-                var groupHeader = '';
-                var e;
-                for (e = 0; e < cleanLines.length; e++) {
-                    if (/^Структурная группа/i.test(cleanLines[e])) { groupHeader = cleanLines[e]; break; }
                 }
                 var shortCompanies = '';
                 var scIdx = -1;
@@ -159,10 +153,14 @@
                         }
                     }
                 }
-                var groupText = groupHeader;
-                if (shortCompanies) groupText = groupText + '\nСписок коротких компаний: ' + shortCompanies;
-                if (departments) groupText = groupText + '\nОтделы: ' + departments;
-                results.push(groupText);
+                // Собираем только компании и отделы, БЕЗ заголовка группы
+                var groupText = '';
+                if (shortCompanies) groupText = 'Список коротких компаний: ' + shortCompanies;
+                if (departments) {
+                    if (groupText) groupText = groupText + '\n';
+                    groupText = groupText + 'Отделы: ' + departments;
+                }
+                if (groupText) results.push(groupText);
             }
             return results.join('\n\n');
         }
@@ -239,10 +237,6 @@
         var passportRF = getPassportRF();
         var foreignPassports = getForeignPassports();
         var isRussian = citizenship.toLowerCase().indexOf('россия') !== -1 || citizenship.toLowerCase().indexOf('russia') !== -1;
-
-        console.log('[SW] ФИО:', fullName);
-        console.log('[SW] Дата рождения:', dateString);
-        console.log('[SW] Телефон:', phone);
 
         return {
             link: window.location.href,
@@ -455,7 +449,7 @@
     }
 
     function init() {
-        console.log('[SW] Запуск версии 2.1 с иконками');
+        console.log('[SW] Запуск версии 2.2');
         createToggleButton();
         setupHotkeys();
     }
