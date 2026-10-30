@@ -93,7 +93,6 @@
             return section.substring(pos, oldEndPos).trim();
         }
 
-        // ===== ИЗМЕНЕНО: убраны заголовки "Структурная группа N" =====
         function parseStructuredGroups(section) {
             var parts = section.split(/(?=Структурная группа)/i);
             var results = [];
@@ -153,7 +152,6 @@
                         }
                     }
                 }
-                // Собираем только компании и отделы, БЕЗ заголовка группы
                 var groupText = '';
                 if (shortCompanies) groupText = 'Список коротких компаний: ' + shortCompanies;
                 if (departments) {
